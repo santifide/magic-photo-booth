@@ -7,6 +7,10 @@ video/*
 fotos/*
 !fotos/.gitkeep
 
+# Ignore backgrounds files, but not the directory itself
+backgrounds/*
+!backgrounds/.gitkeep
+
 # Node.js specific ignores
 node_modules/
 .env

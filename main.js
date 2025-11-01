@@ -39,6 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const galleryGrid = document.getElementById('gallery-grid');
     const backToMenuButton = document.getElementById('back-to-menu-btn');
 
+    // Video Player Modal elements
+    const videoPlayerModal = document.getElementById('video-player-modal');
+    const videoPlayer = document.getElementById('video-player');
+    const closeVideoPlayerBtn = document.getElementById('close-video-player-btn');
+
+    // Photo Viewer Modal elements
+    const photoViewerModal = document.getElementById('photo-viewer-modal');
+    const photoViewerImage = document.getElementById('photo-viewer-image');
+    const closePhotoViewerBtn = document.getElementById('close-photo-viewer-btn');
+
     // Settings modal elements
     const hamburgerMenu = document.getElementById('hamburger-menu');
     const settingsModal = document.getElementById('settings-modal');
@@ -116,7 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function updatePrintingButtonVisibility() {
         if (settings.enablePrinting) {
             printButton.classList.remove('hidden');
-        } else {
+        }
+        else {
             printButton.classList.add('hidden');
         }
     }
@@ -137,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function startPhotoProcess() {
         if (settings.camera === 'reflex') {
             startPhotoDSLR();
-        } else {
+        }
+        else {
             startPhotoWebcam();
         }
     }
@@ -150,7 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
             photoPreview.classList.add('hidden');
             photoOptions.classList.add('hidden');
             startPhotoCountdown();
-        } catch (err) {
+        }
+        catch (err) {
             console.error("Error accessing webcam: ", err);
             backToMainMenu();
         }
@@ -172,7 +185,8 @@ document.addEventListener('DOMContentLoaded', () => {
             count--;
             if (count > 0) {
                 countdownElement.textContent = count;
-            } else {
+            }
+            else {
                 countdownElement.classList.add('hidden');
                 clearInterval(interval);
                 takePhoto();
@@ -220,12 +234,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Setting photo preview src to:', `/api/photo/${result.fileName}`);
                 photoPreview.src = `/api/photo/${result.fileName}?t=${new Date().getTime()}`; // Add cache-busting query param
 
-            } catch (error) {
+            }
+            catch (error) {
                 console.error('Error in takePhoto (DSLR):', error);
                 alert(error.message); // Show error to the user
                 backToMainMenu();
             }
-        } else {
+        }
+        else {
             const context = canvas.getContext('2d');
             canvas.width = webcamVideo.videoWidth;
             canvas.height = webcamVideo.videoHeight;
@@ -264,7 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Failed to save photo');
             }
             console.log('Photo saved successfully');
-        } catch (error) {
+        }
+        catch (error) {
             console.error(error);
         }
         backToMainMenu();
@@ -287,7 +304,8 @@ document.addEventListener('DOMContentLoaded', () => {
             videoOptions.classList.add('hidden');
             videoControls.classList.add('hidden');
             startVideoCountdown();
-        } catch (err) {
+        }
+        catch (err) {
             console.error("Error accessing webcam: ", err);
             backToMainMenu();
         }
@@ -302,7 +320,8 @@ document.addEventListener('DOMContentLoaded', () => {
             count--;
             if (count > 0) {
                 videoCountdownElement.textContent = count;
-            } else {
+            }
+            else {
                 videoCountdownElement.classList.add('hidden');
                 clearInterval(interval);
                 startRecording();
@@ -362,7 +381,8 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaRecorder.pause();
             pauseResumeButton.textContent = 'Reanudar';
             clearInterval(recordingTimer);
-        } else if (mediaRecorder.state === 'paused') {
+        }
+        else if (mediaRecorder.state === 'paused') {
             mediaRecorder.resume();
             pauseResumeButton.textContent = 'Pausar';
             startRecordingTimer(); // Resumes the timer logic
@@ -395,7 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Failed to save video');
             }
             console.log('Video saved successfully');
-        } catch (error) {
+        }
+        catch (error) {
             console.error(error);
         }
         backToMainMenu();
@@ -440,23 +461,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (media.type === 'foto') {
                     const img = document.createElement('img');
                     img.src = media.url;
-                    img.className = 'w-full h-auto object-cover rounded';
+                    img.className = 'w-full h-auto object-cover rounded cursor-pointer';
+                    img.onerror = () => {
+                        img.style.display = 'none';
+                    };
+                    img.addEventListener('click', () => {
+                        photoViewerImage.src = img.src;
+                        photoViewerModal.classList.remove('hidden');
+                    });
                     galleryGrid.appendChild(img);
-                } else if (media.type === 'video') {
+                }
+                else if (media.type === 'video') {
                     const video = document.createElement('video');
                     video.src = media.url;
-                    video.controls = true;
-                    video.className = 'w-full h-auto object-cover rounded';
+                    video.className = 'w-full h-auto object-cover rounded cursor-pointer';
+                    video.addEventListener('click', () => {
+                        videoPlayer.src = video.src;
+                        videoPlayerModal.classList.remove('hidden');
+                        videoPlayer.play();
+                    });
                     galleryGrid.appendChild(video);
                 }
             });
-        } catch (error) {
+        }
+        catch (error) {
             console.error(error);
             galleryGrid.innerHTML = '<p class="text-center col-span-full text-red-500">Error al cargar la galería.</p>';
         }
     }
 
-    // --- BACKGROUND SLIDESHOW LOGIC ---
+    closeVideoPlayerBtn.addEventListener('click', () => {
+        videoPlayerModal.classList.add('hidden');
+        videoPlayer.pause();
+        videoPlayer.src = '';
+    });
+
+    closePhotoViewerBtn.addEventListener('click', () => {
+        photoViewerModal.classList.add('hidden');
+    });
+
+
+    // --- BACKGROUND SLIDESHOW LOG ---
     async function startBackgroundSlideshow() {
         try {
             const response = await fetch('/api/backgrounds');
@@ -490,7 +535,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 imageElements[currentImageIndex].style.opacity = '1';
             }, settings.slideshowInterval * 1000);
 
-        } catch (error) {
+        }
+        catch (error) {
             console.error(error);
             backgroundSlideshow.style.backgroundColor = 'black';
         }

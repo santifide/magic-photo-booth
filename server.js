@@ -37,10 +37,22 @@ app.get('/api/gallery', (req, res) => {
             if (!fs.existsSync(dir)) {
                 return [];
             }
-            return fs.readdirSync(dir).map(file => ({
-                url: `${type}/${file}`,
-                type: type.slice(0, -1) // 'fotos' -> 'foto', 'video' -> 'video'
-            }));
+            const allowedExtensions = {
+                'fotos': ['.jpg', '.jpeg', '.png', '.gif'],
+                'video': ['.webm', '.mp4']
+            };
+            return fs.readdirSync(dir)
+                .filter(file => {
+                    if (file === '.gitkeep') {
+                        return false;
+                    }
+                    const ext = path.extname(file).toLowerCase();
+                    return allowedExtensions[type].includes(ext);
+                })
+                .map(file => ({
+                    url: `${type}/${file}`,
+                    type: type === 'fotos' ? 'foto' : 'video' // Corrected logic
+                }));
         } catch (error) {
             console.error(`Error reading ${dir}:`, error);
             return []; // Return empty array on error

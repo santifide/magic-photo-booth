@@ -108,6 +108,22 @@
         </div>
     </div>
 
+    <!-- Video Player Modal -->
+    <div id="video-player-modal" class="hidden absolute inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
+        <div class="relative w-full max-w-4xl">
+            <button id="close-video-player-btn" class="absolute -top-8 -right-4 text-white text-4xl font-bold">&times;</button>
+            <video id="video-player" class="w-full" controls autoplay></video>
+        </div>
+    </div>
+
+    <!-- Photo Viewer Modal -->
+    <div id="photo-viewer-modal" class="hidden absolute inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center">
+        <div class="relative w-full max-w-4xl">
+            <button id="close-photo-viewer-btn" class="absolute -top-8 -right-4 text-white text-4xl font-bold">&times;</button>
+            <img id="photo-viewer-image" class="w-full h-auto object-contain">
+        </div>
+    </div>
+
     <script src="main.js"></script>
 </body>
 </html>
