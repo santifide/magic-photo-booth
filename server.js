@@ -1,3 +1,4 @@
+const { spawn } = require('child_process');
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -70,6 +71,92 @@ app.post('/api/save-photo', express.json({ limit: '50mb' }), (req, res) => {
         }
         res.status(200).send({ message: 'Photo saved successfully!', path: `fotos/${fileName}` });
     });
+});
+
+// Endpoint to take a photo with the DSLR
+app.post('/api/take-dslr-photo', (req, res) => {
+    const fileName = `dslr_${new Date().getTime()}.jpg`;
+    const filePath = path.join(__dirname, 'fotos', fileName);
+    const gphoto2 = spawn('gphoto2', ['--capture-image-and-download', '--filename', filePath]);
+
+    let stderr = '';
+
+    gphoto2.stdout.on('data', (data) => {
+        console.log(`gphoto2 stdout: ${data}`);
+    });
+
+    gphoto2.stderr.on('data', (data) => {
+        console.error(`gphoto2 stderr: ${data}`);
+        stderr += data.toString();
+    });
+
+    gphoto2.on('close', (code) => {
+        if (code === 0) {
+            // Poll for the file to exist, with a timeout
+            const pollTimeout = 10000; // 10 seconds
+            const pollInterval = 200; // 200 ms
+            let timeWaited = 0;
+
+            const poll = setInterval(() => {
+                if (fs.existsSync(filePath)) {
+                    clearInterval(poll);
+                    console.log(`Photo taken and saved to ${filePath}`);
+                    res.status(200).send({ message: 'Photo saved successfully!', fileName: fileName });
+                    
+                    // Clean up temporary files from gphoto2
+                    fs.readdir(__dirname, (err, files) => {
+                        if (err) {
+                            console.error('Error reading directory to clean temp files:', err);
+                            return;
+                        }
+                        files.forEach(file => {
+                            if (file.startsWith('tmpfile')) {
+                                fs.unlink(path.join(__dirname, file), err => {
+                                    if (err) {
+                                        console.error('Error deleting temp file:', err);
+                                    } else {
+                                        console.log('Deleted temp file:', file);
+                                    }
+                                });
+                            }
+                        });
+                    });
+
+                } else {
+                    timeWaited += pollInterval;
+                    if (timeWaited >= pollTimeout) {
+                        clearInterval(poll);
+                        console.error('gphoto2 command executed, but file was not created in time.');
+                        res.status(500).send('Failed to save photo after capture.');
+                    }
+                }
+            }, pollInterval);
+
+        } else {
+            console.error(`gphoto2 process exited with code ${code}. stderr: ${stderr}`);
+            if (stderr.includes('No camera found')) {
+                return res.status(500).send('No camera detected. Make sure it is connected and not claimed by another application.');
+            }
+            res.status(500).send(`Failed to take picture: ${stderr}`);
+        }
+    });
+
+    gphoto2.on('error', (err) => {
+        console.error('Failed to start gphoto2 process.', err);
+        res.status(500).send('Failed to start gphoto2 process.');
+    });
+});
+
+// Endpoint to serve a specific photo
+app.get('/api/photo/:filename', (req, res) => {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, 'fotos', filename);
+
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).send('Photo not found.');
+    }
 });
 
 // Endpoint to save videos

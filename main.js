@@ -131,8 +131,16 @@ document.addEventListener('DOMContentLoaded', () => {
         mainMenu.classList.add('hidden');
         photoBooth.classList.remove('hidden');
         photoBooth.classList.add('flex');
-        startPhotoWebcam();
+        startPhotoProcess();
     });
+
+    function startPhotoProcess() {
+        if (settings.camera === 'reflex') {
+            startPhotoDSLR();
+        } else {
+            startPhotoWebcam();
+        }
+    }
 
     async function startPhotoWebcam() {
         try {
@@ -146,6 +154,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Error accessing webcam: ", err);
             backToMainMenu();
         }
+    }
+
+    function startPhotoDSLR() {
+        webcamVideo.classList.add('hidden');
+        photoPreview.classList.add('hidden');
+        photoOptions.classList.add('hidden');
+        startPhotoCountdown();
     }
 
     function startPhotoCountdown() {
@@ -165,26 +180,77 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     }
 
-    function takePhoto() {
+    async function takePhoto() {
         flashElement.classList.remove('hidden');
         setTimeout(() => flashElement.classList.add('hidden'), 200);
 
-        const context = canvas.getContext('2d');
-        canvas.width = webcamVideo.videoWidth;
-        canvas.height = webcamVideo.videoHeight;
-        context.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
+        if (settings.camera === 'reflex') {
+            try {
+                console.log('Taking DSLR photo...');
+                countdownElement.textContent = 'Tomando foto...';
+                countdownElement.classList.remove('hidden');
 
-        stopStream(webcamVideo.srcObject);
-        webcamVideo.classList.add('hidden');
+                const response = await fetch('/api/take-dslr-photo', { method: 'POST' });
+                
+                console.log('Received response from server');
 
-        photoPreview.src = canvas.toDataURL('image/jpeg');
-        photoPreview.classList.remove('hidden');
-        photoOptions.classList.remove('hidden');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to take DSLR photo: ${errorText}`);
+                }
+                const result = await response.json();
+                console.log('Server response:', result);
+
+                countdownElement.classList.add('hidden');
+
+                photoPreview.onload = () => {
+                    console.log('Photo preview loaded');
+                    photoPreview.classList.remove('hidden');
+                    photoOptions.classList.remove('hidden');
+                    saveButton.textContent = 'Volver al menú'; // Change text for DSLR
+                    saveButton.classList.remove('hidden'); // Ensure it's visible
+                };
+                
+                photoPreview.onerror = () => {
+                    console.error('Error loading photo preview.');
+                    alert('Error al cargar la previsualización de la foto.');
+                    backToMainMenu();
+                };
+
+                console.log('Setting photo preview src to:', `/api/photo/${result.fileName}`);
+                photoPreview.src = `/api/photo/${result.fileName}?t=${new Date().getTime()}`; // Add cache-busting query param
+
+            } catch (error) {
+                console.error('Error in takePhoto (DSLR):', error);
+                alert(error.message); // Show error to the user
+                backToMainMenu();
+            }
+        } else {
+            const context = canvas.getContext('2d');
+            canvas.width = webcamVideo.videoWidth;
+            canvas.height = webcamVideo.videoHeight;
+            context.drawImage(webcamVideo, 0, 0, canvas.width, canvas.height);
+
+            stopStream(webcamVideo.srcObject);
+            webcamVideo.classList.add('hidden');
+
+            photoPreview.src = canvas.toDataURL('image/jpeg');
+            photoPreview.classList.remove('hidden');
+            photoOptions.classList.remove('hidden');
+            saveButton.textContent = 'Guardar foto'; // Reset text for webcam
+            saveButton.classList.remove('hidden');
+        }
     }
 
-    deleteButton.addEventListener('click', startPhotoWebcam);
+    deleteButton.addEventListener('click', startPhotoProcess);
 
     saveButton.addEventListener('click', async () => {
+        if (settings.camera === 'reflex') {
+            // Photo is already saved by the server, so just go back to main menu
+            backToMainMenu();
+            return;
+        }
+
         const dataUrl = photoPreview.src;
         try {
             const response = await fetch('/api/save-photo', {

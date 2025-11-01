@@ -21,8 +21,15 @@ La aplicación permite a los usuarios tomarse fotos, grabar videosaludos y ver u
 4.  **Ver Galería**: Muestra las fotos y videos guardados.
 5.  **Menú de Configuración**: Permite ajustar parámetros como tiempos de conteo, duración de video, selección de cámara (webcam/réflex) y activación de la impresora.
 
+## Soporte para Cámaras DSLR
+
+La aplicación incluye soporte para cámaras réflex (DSLR) a través de la librería `gphoto2`. Para utilizar esta funcionalidad, asegúrate de tener `gphoto2` instalado en tu sistema.
+
+**Importante:** Si experimentas problemas al usar tu cámara DSLR, consulta la guía de solución de problemas: [DSLR_CAMERA_TROUBLESHOOTING.md](DSLR_CAMERA_TROUBLESHOOTING.md)
+
 ## Tecnología
 
 *   **Frontend**: HTML, Tailwind CSS (vía Play CDN)
-*   **Backend**: Node.js (planificado)
+*   **Backend**: Node.js, Express.js
 *   **Lógica de cliente**: JavaScript
+*   **Control de Cámaras DSLR**: `gphoto2`
