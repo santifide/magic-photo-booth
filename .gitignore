@@ -1,6 +1,11 @@
 # User-specified ignores
-fotos/
-video/
+# Ignore video files, but not the directory itself
+video/*
+!video/.gitkeep
+
+# Ignore photo files, but not the directory itself
+fotos/*
+!fotos/.gitkeep
 
 # Node.js specific ignores
 node_modules/
