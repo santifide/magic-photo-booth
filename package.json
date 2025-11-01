@@ -1,0 +1,24 @@
+{
+  "name": "magic-photo-booth",
+  "version": "1.0.0",
+  "description": "Este es un proyecto de \"espejo mágico\" o \"cabina de selfies\" interactiva.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/santifide/magic-photo-booth.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/santifide/magic-photo-booth/issues"
+  },
+  "homepage": "https://github.com/santifide/magic-photo-booth#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}

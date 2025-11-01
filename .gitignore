@@ -1,0 +1,8 @@
+# User-specified ignores
+fotos/
+video/
+
+# Node.js specific ignores
+node_modules/
+.env
+*.log
