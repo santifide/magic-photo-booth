@@ -19,6 +19,9 @@
   },
   "homepage": "https://github.com/santifide/magic-photo-booth#readme",
   "dependencies": {
-    "express": "^5.1.0"
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "node-fetch": "^2.7.0",
+    "openai": "^4.33.0"
   }
 }

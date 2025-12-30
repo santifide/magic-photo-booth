@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const printButton = document.getElementById('print-btn');
     const deleteButton = document.getElementById('delete-btn');
     const saveButton = document.getElementById('save-btn');
+    const aiButton = document.getElementById('ai-btn');
 
     // Video booth elements
     const videoBooth = document.getElementById('video-booth');
@@ -61,6 +62,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Background slideshow element
     const backgroundSlideshow = document.getElementById('background-slideshow');
+
+    // AI Modal elements
+    const aiModal = document.getElementById('ai-styles-modal');
+    const closeAiModalBtn = document.getElementById('close-ai-modal');
+    const aiStylesContainer = document.getElementById('ai-styles-container');
+    const aiStatus = document.getElementById('ai-status');
 
     // State variables
     let mediaRecorder;
@@ -222,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     photoPreview.classList.remove('hidden');
                     photoOptions.classList.remove('hidden');
                     saveButton.textContent = 'Volver al menú'; // Change text for DSLR
+                    aiButton.classList.add('hidden'); // Hide AI button for DSLR for now (optional)
                     saveButton.classList.remove('hidden'); // Ensure it's visible
                 };
                 
@@ -254,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             photoPreview.classList.remove('hidden');
             photoOptions.classList.remove('hidden');
             saveButton.textContent = 'Guardar foto'; // Reset text for webcam
+            aiButton.classList.remove('hidden');
             saveButton.classList.remove('hidden');
         }
     }
@@ -286,6 +295,77 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         backToMainMenu();
     });
+
+    // --- AI STYLES LOGIC ---
+    aiButton.addEventListener('click', () => {
+        aiModal.classList.remove('hidden');
+        loadAiStyles();
+    });
+
+    closeAiModalBtn.addEventListener('click', () => {
+        aiModal.classList.add('hidden');
+        aiStatus.innerText = '';
+    });
+
+    async function loadAiStyles() {
+        aiStylesContainer.innerHTML = '<p class="text-gray-400 col-span-full text-center">Cargando estilos...</p>';
+        try {
+            const res = await fetch('/api/styles');
+            const styles = await res.json();
+            
+            aiStylesContainer.innerHTML = '';
+            styles.forEach(style => {
+                const btn = document.createElement('button');
+                btn.className = 'flex flex-col items-center justify-center p-4 bg-gray-800 hover:bg-gray-700 rounded-lg border border-gray-600 hover:border-purple-500 transition-all group';
+                btn.innerHTML = `<span class="text-xl font-bold text-white group-hover:text-purple-300 mb-2">${style.name}</span><span class="text-xs text-gray-400 text-center">${style.description}</span>`;
+                btn.onclick = () => applyAiStyle(style.id);
+                aiStylesContainer.appendChild(btn);
+            });
+        } catch (e) {
+            console.error(e);
+            aiStylesContainer.innerHTML = '<p class="text-red-500 col-span-full text-center">Error cargando estilos</p>';
+        }
+    }
+
+    async function applyAiStyle(styleId) {
+        let src = photoPreview.src;
+        let filename;
+
+        aiStatus.innerText = '✨ Preparando imagen...';
+        aiStatus.className = 'text-purple-400 animate-pulse font-bold text-center text-lg mb-4';
+
+        try {
+            // 1. Si la imagen es base64 (recién tomada con webcam), guardarla primero temporalmente
+            if (src.startsWith('data:')) {
+                const saveRes = await fetch('/api/save-photo', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ dataUrl: src }) 
+                });
+                const saveData = await saveRes.json();
+                if (!saveRes.ok) throw new Error('Error guardando imagen temporal');
+                filename = saveData.path.split('/').pop(); // Obtener solo el nombre del archivo
+            } else {
+                // Si ya es una URL (ej. DSLR o ya guardada), extraer el nombre
+                filename = src.substring(src.lastIndexOf('/') + 1).split('?')[0];
+            }
+
+            // 2. Enviar a procesar
+            aiStatus.innerText = '✨ Generando magia... (Espere unos segundos)';
+            const res = await fetch('/api/apply-style', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename, styleId }) });
+            const data = await res.json();
+            
+            if (res.ok) {
+                photoPreview.src = data.path + '?t=' + new Date().getTime(); // Actualizar vista previa con cache busting
+                aiStatus.innerText = '✅ ¡Listo!';
+                aiStatus.className = 'text-green-500 font-bold text-center text-lg mb-4';
+                setTimeout(() => aiModal.classList.add('hidden'), 1000);
+            } else throw new Error(data.message);
+        } catch (error) {
+            aiStatus.innerText = '❌ Error: ' + error.message;
+            aiStatus.className = 'text-red-500 font-bold text-center text-lg mb-4';
+        }
+    }
 
     // --- VIDEO BOOTH LOGIC ---
     recordVideoButton.addEventListener('click', () => {
